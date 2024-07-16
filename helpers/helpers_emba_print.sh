@@ -17,6 +17,7 @@
 # Description:  All functions for colorizing terminal output and handling logging
 
 ## Color definition
+# 使用 ANSI 转义序列可以在终端中生成彩色输出
 export RED="\033[0;31m"
 export GREEN="\033[0;32m"
 export ORANGE="\033[0;33m"
@@ -131,12 +132,19 @@ print_output()
 {
   local OUTPUT="${1:-\n}"
   local LOG_SETTING="${2:-}"
+  # 检查 LOG_SETTING 是否非空、LOG_SETTING 的目录是否存在，
+  # 以及 LOG_FILE 和 LOG_FILE_MOD 是否不同。满足条件时，它会设置 LOG_FILE_MOD 变量
   if [[ -n "${LOG_SETTING}" && -d "$(dirname "${LOG_SETTING}")" && "${LOG_FILE:-}" != "${LOG_FILE_MOD:-}" ]]; then
     local LOG_FILE_MOD="${2:-}"
   fi
   # add a link as third argument to add a link marker for web report
   local REF_LINK="${3:-}"
   local TYPE_CHECK=""
+  # -c 表示按字符范围提取，1-3 表示提取第 1 到第 3 个字符
+  # [-]
+  # [*]
+  # [!]
+  # [+]
   TYPE_CHECK="$( echo "${OUTPUT}" | cut -c1-3 )"
 
   if [[ "${TYPE_CHECK}" == "[-]" || "${TYPE_CHECK}" == "[*]" || "${TYPE_CHECK}" == "[!]" || "${TYPE_CHECK}" == "[+]" ]] ; then
@@ -217,8 +225,11 @@ check_int() {
 }
 
 check_alnum() {
+  # ${1:-} 是一种处理位置参数的安全方法，确保在参数未设置或为空时提供一个默认值
   local INPUT_TO_CHECK="${1:-}"
   [[ -z "${INPUT_TO_CHECK}" ]] && return
+  # ^[[:alnum:]]+$: 这是一个正则表达式，用于匹配只包含字母和数字字符的字符串
+  # [[:alnum:]] 是一个字符类，表示任意字母或数字字符
   if ! [[ "${INPUT_TO_CHECK}" =~ ^[[:alnum:]]+$ ]]; then
     print_output "[-] Invalid input detected - alphanumerical only" "no_log"
     exit 1
@@ -448,6 +459,9 @@ color_output()
   local TEXT_ARR=()
   local TEXT=""
   local E=""
+  # readarray: bash 内建命令，用于从标准输入或文件中读取行，并存储在数组中
+  # <<<: 这是 here string 操作符，用于将其右侧的字符串传递给命令的标准输入
+  # 与传统的 here document (<<) 不同，here string 只处理单个字符串
   readarray TEXT_ARR <<< "${1:-}"
 
   for E in "${TEXT_ARR[@]}" ; do
@@ -455,6 +469,8 @@ color_output()
     TYPE_CHECK="$( echo "${E}" | cut -c1-3 )"
     if [[ "${TYPE_CHECK}" == "[-]" || "${TYPE_CHECK}" == "[*]" || "${TYPE_CHECK}" == "[!]" || "${TYPE_CHECK}" == "[+]" ]] ; then
       local STR=""
+      # 略去标识符号：[-]、[*]、[!]、[+]
+      # 根据符号的不同，打印的文字有不同的颜色
       STR="$( echo "${E}" | cut -c 4- || true)"
       if [[ "${TYPE_CHECK}" == "[-]" ]] ; then
         TEXT="${TEXT}""[""${RED}""-""${NC}""]""${STR}"
@@ -610,6 +626,7 @@ format_log()
   # remove log formatting, even if EMBA is set to format it (for [REF] markers used)
   local OVERWRITE_SETTING="${2:-}"
   if [[ ${FORMAT_LOG} -eq 0 ]] || [[ ${OVERWRITE_SETTING} -eq 1 ]] ; then
+    # 清理字符串中的 ANSI 转义序列、颜色代码以及换行符
     echo "${LOG_STRING}" | sed -r "s/\\\033\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" \
       | sed -r "s/\\\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" \
       | sed -r "s/\[([0-9]{1,2}(;[0-9]{1,2}(;[0-9]{1,2})?)?)?[m|K]//g" \
@@ -868,6 +885,7 @@ banner_printer() {
 write_notification() {
   [[ "${DISABLE_NOTIFICATIONS}" -eq 1 ]] && return
   # in case DISPLAY is not set we are not able to show notifications
+  # -v 通常用于检查变量是否已被定义或赋值
   if ! [[ -v DISPLAY ]]; then
     return
   fi
@@ -882,6 +900,13 @@ write_notification() {
   else
     # if we are on the host (e.g., in developer mode) we can directly handle
     # the notification
+    # 在 notify-send: Linux 系统上发送桌面通知的命令
+    # -p：此选项用于输出通知的 ID
+    # -r "${NOTIFICATION_ID}"：此选项用于替换现有的通知。${NOTIFICATION_ID} 是一个变量，存储了之前发送的通知 ID
+    # --icon="${EMBA_ICON}"：此选项用于设置通知的图标。${EMBA_ICON} 是一个变量，存储了图标的路径或名称
+    # "EMBA"：这是通知的标题
+    # "${MESSAGE}"：这是通知的正文内容。${MESSAGE} 是一个变量，存储了要显示的消息
+    # -t 2：此选项用于设置通知的显示时间（以毫秒为单位）
     NOTIFICATION_ID=$(notify-send -p -r "${NOTIFICATION_ID}" --icon="${EMBA_ICON}" "EMBA" "${MESSAGE}" -t 2 || true)
   fi
 }

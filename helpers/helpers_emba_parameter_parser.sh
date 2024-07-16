@@ -18,6 +18,11 @@
 
 
 emba_parameter_parsing() {
+  # getopts 是用于解析命令行选项的内置Bash命令
+  # getopts <optstring> <variable>
+  # <optstring>: 
+    # 定义了可以接受的选项，每个字符代表一个选项
+    # 如果一个选项需要参数，该字符后面添加冒号
   while getopts a:bBA:cC:d:De:Ef:Fghik:l:m:N:o:p:P:QrsStT:UVX:yY:WzZ: OPT ; do
     case "${OPT}" in
       a)

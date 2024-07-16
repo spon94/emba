@@ -229,6 +229,7 @@ dependency_check()
   # setup the proxy for everything except the main EMBA container:
   if [[ "${CONTAINER_NUMBER}" -ne 1 ]]; then
     if [[ -n "${PROXY_SETTINGS}" ]]; then
+      # 设置 HTTP 和 HTTPS 代理
       export http_proxy="${PROXY_SETTINGS}"
       export https_proxy="${PROXY_SETTINGS}"
     fi

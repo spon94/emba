@@ -21,17 +21,34 @@
 INVOCATION_PATH="."
 MODULE_COUNT=0
 
-
+# 导入 helpers 文件夹中前缀为 helpers_emba_ 的脚本文件
+# 使用其中定义的函数和变量
 import_helper()
 {
   local HELPERS=()
   local HELPER_COUNT=0
   local HELPER_FILE=""
+  # 读取由 find 生成的文件列表，并将文件名存储在 HELPERS 数组中
+  # iname 指定了搜索的文件名模式，忽略大小写
+  # -print0 使 find 命令输出的文件名以空字符（null character，'\0'）分隔，而不是默认的换行符
+  # 2> /dev/null 将错误输出重定向到 /dev/null，这意味着任何错误信息（例如权限问题）都会被忽略
+  # < <(...) 是一种进程替换，用于将括号中的命令输出作为输入传递给前面的命令
+  # mapfile 用于将输入的每一行读取到一个数组中
+  # -d '' 指定分隔符为空字符（null character，'\0'），与 find -print0 的输出格式匹配
   mapfile -d '' HELPERS < <(find "${HELP_DIR}" -iname "helpers_emba_*.sh" -print0 2> /dev/null)
+  # @ 表示数组的所有元素
   for HELPER_FILE in "${HELPERS[@]}" ; do
+    # ! [[ "${HELPER_FILE}" =~ \ |\' ]]：检查变量 HELPER_FILE 中是否包含空格或单引号字符
+    # [[ ... ]] 是 bash 的条件测试命令，比 [ 和 test 更强大，支持更多的操作符和更复杂的表达式
+    # =~ 是 bash 的正则表达式匹配运算符，用于检查字符串是否匹配指定的正则表达式模式
     if ( file "${HELPER_FILE}" | grep -q "shell script" ) && ! [[ "${HELPER_FILE}" =~ \ |\' ]] ; then
       # https://github.com/koalaman/shellcheck/wiki/SC1090
       # shellcheck source=/dev/null
+
+      # source 命令用于在当前 shell 环境中读取并执行指定文件的内容
+      # 与 ./ 不同，source 不会在子 shell 中执行脚本，而是在当前 shell 中执行，
+      # 这意味着任何定义的函数、变量或修改的环境都会在当前 shell 有效
+      # 在一些 shell（如 bash）中，source 命令也可以用 . 来代替
       source "${HELPER_FILE}"
       (( HELPER_COUNT+=1 ))
     fi
@@ -49,15 +66,22 @@ import_module()
   # to ensure we are only auto load modules from the modules main directory we set maxdepth
   # with this in place we can create sub directories per module. For using/loading stuff from
   # these sub directories the modules are responsible!
+
+  # maxdepth 1 的设置使得我们可以为每个模块创建子目录，对于使用/加载这些子目录中的内容，各模块需自行负责
+  # sort -V: 按照版本号进行排序
   mapfile -t MODULES_EMBA < <(find "${MOD_DIR}" -maxdepth 1 -name "*.sh" | sort -V 2> /dev/null)
+  # 读入 modules_local 文件夹中的模块信息
   if [[ -d "${MOD_DIR_LOCAL}" ]]; then
     mapfile -t MODULES_LOCAL < <(find "${MOD_DIR_LOCAL}" -maxdepth 1 -name "*.sh" 2>/dev/null | sort -V 2> /dev/null)
   fi
+  # 数组拼接操作
   MODULES=( "${MODULES_EMBA[@]}" "${MODULES_LOCAL[@]}" )
   for MODULE_FILE in "${MODULES[@]}" ; do
     if ( file "${MODULE_FILE}" | grep -q "shell script" ) && ! [[ "${MODULE_FILE}" =~ \ |\' ]] ; then
       # https://github.com/koalaman/shellcheck/wiki/SC1090
       # shellcheck source=/dev/null
+
+      # 读入模块文件
       source "${MODULE_FILE}"
       (( MODULE_COUNT+=1 ))
     fi
@@ -318,24 +342,37 @@ run_modules()
 }
 
 main() {
+  # set 命令主要用来设置 shell
+  # set -a 将所有后续定义的变量自动导出为环境变量
   set -a
+  # trap 允许您捕获信号并在信号发生时执行代码
+  # trap cleaner INT 设置一个陷阱，当接收到 INT 信号时（通常是用户按下 Ctrl+C），执行 cleaner 函数
   trap cleaner INT
 
+  # ${0}: 当前脚本的名称
+  # $(dirname "${0}"): 当前脚本所在的目录路径
   INVOCATION_PATH="$(dirname "${0}")"
 
+  # $: 特殊变量，表示当前进程的 PID
+  # export EMBA_PID="$$": 将当前进程的 PID 存储在名为 EMBA_PID 的环境变量中，并导出这个变量，使其在子进程中也可用。
   export EMBA_PID="$$"
 
   # loads default values for EMBA
   export HELP_DIR="${INVOCATION_PATH}""/helpers"
   import_helper
+  # helpers_emba_defaults.sh 中定义
+  # 预定义 emba 运行过程中所涉及的环境变量默认值
   set_defaults
 
+  # helpers_emba_print.sh 中定义
   print_ln "no_log"
   import_module
-
+  # helpers_emba_print.sh 中定义
   welcome  # Print EMBA welcome message
 
+  # $#: 特殊变量，脚本命令行参数的个数
   if [[ $# -eq 0 ]]; then
+    # helpers_emba_print.sh 中定义
     print_output "\\n""${ORANGE}""In order to be able to use EMBA, you have to specify at least a firmware (-f)." "no_log"
     print_output "If you don't set a log directory (-l), then ./logs will be used.""${NC}" "no_log"
     print_help
@@ -343,8 +380,11 @@ main() {
   fi
 
   export EMBA_COMMAND
+  # 将脚本目录下的emba脚本文件绑定到变量 EMBA_COMMAND
   EMBA_COMMAND="$(dirname "${0}")""/emba ""$*"
 
+  # helpers_emba_parameter_parser.sh 文件中定义
+  # 解析传递给脚本的命令行参数
   emba_parameter_parsing "$@"
 
   print_ln "no_log"
