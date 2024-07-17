@@ -244,6 +244,10 @@ dependency_check()
     fi
 
     # the update check can be disabled via NO_UPDATE_CHECK
+    # 检查 emba 版本
+    # 检查 docker 镜像版本
+    # 检查 epss(Exploit Prediction Scoring System) 数据库
+    # 检查 nvd 数据库
     if [[ "${NO_UPDATE_CHECK}" -ne 1 ]]; then
       export GIT_TERMINAL_PROMPT=0
       git clone https://github.com/EMBA-support-repos/onlinecheck "${EXT_DIR}"/onlinechecker -q
@@ -455,7 +459,11 @@ dependency_check()
   if [[ "${IN_DOCKER}" -eq 0 ]]; then
     print_ln "no_log"
     print_output "[*] Load kernel modules on host system:" "no_log"
+    # 检查当前系统是否加载了 ufs 模块
+    # 
     if ! lsmod | grep -q ufs; then
+    # 加载内核模块
+    # || true: 脚本不会因为错误而终止
       modprobe ufs || true
     fi
     if ! lsmod | grep -q nandsim; then
@@ -576,6 +584,7 @@ dependency_check()
         fi
         print_output "    cpu_rec - \\c" "no_log"
         if [[ -d "${EXT_DIR}"/cpu_rec/ ]]; then
+          # -p：保留文件的属性，包括时间戳、所有权和权限
           cp -pr "${EXT_DIR}"/cpu_rec/cpu_rec.py "${HOME}"/.config/binwalk/modules/
           cp -pr "${EXT_DIR}"/cpu_rec/cpu_rec_corpus "${HOME}"/.config/binwalk/modules/
           echo -e "${GREEN}""ok""${NC}"

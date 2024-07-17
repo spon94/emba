@@ -28,9 +28,13 @@ load_strict_mode_settings() {
     export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
     set -x
   fi
+  # 启用 bash 的拓展调试功能
   shopt -s extdebug # Enable extended debugging
   # nosemgrep
+  # bash中的特殊变量，指定字段分隔符
   IFS=$'\n\t'     # Set the "internal field separator"
+  # trap 命令用于指定在特定信号或事件发生时要执行的命令
+  # 脚本出错时执行 wickStrictModeFail $?
   trap 'wickStrictModeFail $?' ERR  # The ERR trap is triggered when a script catches an error
 }
 

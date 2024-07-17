@@ -21,7 +21,11 @@
 
 check_path_valid() {
   local C_PATH="${1:-}"
-
+  # 检查路径是否非空
+  # 滤除 / ./ ../ 传入的相对路径
+  # ${C_PATH:0:1}
+    # 0: 起始位置
+    # 1: 提取的字符数
   if [[ -n "${C_PATH}" ]] && { [[ "${C_PATH:0:1}" != "/" ]] && [[ "${C_PATH:0:2}" != "./" ]] && [[ "${C_PATH:0:3}" != "../" ]] ; } ; then
     print_output "[!] ""${C_PATH}"" is not a valid path in the context of emba" "no_log"
     print_output "    Try it again with \"/\", \"./\" or \"../\" at the beginning of the path.\\n" "no_log"
@@ -32,6 +36,8 @@ check_path_valid() {
 
 abs_path() {
   if [[ -e "${1:-}" ]] ; then
+    # realpath : 解析路径并输出其绝对路径的命令
+    # -s : 指定输出路径时不解析符号链接
     echo -e "$(realpath -s "${1:-}")"
   else
     echo "${1:-}"

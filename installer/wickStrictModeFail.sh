@@ -10,7 +10,10 @@
 # License: https://github.com/tests-always-included/wick/blob/master/LICENSE.md
 
 wickStrictModeFail() (
+  # -e 选项允许使用转义序列格式化输出
   echo -e "------------------------------------------------------------------------------------------------"
+  # 关闭 bash 脚本中的调试模式
+  # 调试模式下，bash 会在执行每个命令之前，将该命令打印到标准错误输出
   set +x
   local argsList argsLeft i nextArg
 
@@ -22,6 +25,7 @@ wickStrictModeFail() (
       echo "Pipe status: " "${PIPESTATUS[@]}"
   fi
 
+  # $#: 传递给脚本的参数个数
   i=$#
   nextArg=$#
 

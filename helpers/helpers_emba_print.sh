@@ -354,12 +354,22 @@ write_grep_log()
     readarray -t OUTPUT_ARR <<< "${1}"
     local MESSAGE_TYPE_PAR="${2:-}"
     for E in "${OUTPUT_ARR[@]}" ; do
+      # ${E//[[:blank:]]/}: bash 字符串替换语法
+      # // 全局替换
+      # [[:blank:]]: posix 字符类，匹配所有空白字符，空格、制表符
+      # / 空白字符串
       if [[ -n "${E//[[:blank:]]/}" ]] && [[ "${E}" != "\\n" ]] && [[ -n "${E}" ]] ; then
         if [[ -n "${MESSAGE_TYPE_PAR}" ]] ; then
           MESSAGE_TYPE="${MESSAGE_TYPE_PAR}"
           OLD_MESSAGE_TYPE="${MESSAGE_TYPE}"
           TYPE=2
         else
+          # 如果未定义MESSAGE_TYPE，使用预定义的五种模式: [-] [*] [!] [+] ""
+          # MESSAGE_TYPE 均属于 TYPE=1,
+          # [-]   FALSE
+          # [*]   MESSAGE
+          # [!]   WARNING
+          # [+]   POSITIVE
           TYPE_CHECK="$( echo "${E}" | cut -c1-3 )"
           if [[ "${TYPE_CHECK}" == "[-]" ]] ; then
             MESSAGE_TYPE="FALSE"
@@ -382,12 +392,19 @@ write_grep_log()
             TYPE=3
           fi
         fi
+        # TYPE=1 TYPE=2 录入日志文件内容一致
+        # TODO
+          # 记录信息类型，使用 ; 分隔，记录模块信息
+        # TYPE=3 将 
         if [[ ${TYPE} -eq 1 ]] ; then
+          # GREP_LOG_DELIMITER=";"
           echo -e "${MESSAGE_TYPE}""${GREP_LOG_DELIMITER}""$(echo -e "$(add_info_grep_log)")""$(echo -e "$(format_grep_log "$(echo "${E}" | cut -c4- )")")" | tee -a "${GREP_LOG_FILE}" >/dev/null
         elif [[ ${TYPE} -eq 2 ]] ; then
           echo -e "${MESSAGE_TYPE}""${GREP_LOG_DELIMITER}""$(echo -e "$(add_info_grep_log)")""$(echo -e "$(format_grep_log "${E}")")" | tee -a "${GREP_LOG_FILE}" >/dev/null
         elif [[ ${TYPE} -eq 3 ]] ; then
+          # truncate -s -1: 减少文件一字节大小
           truncate -s -1 "${GREP_LOG_FILE}"
+          # GREP_LOG_LINEBREAK=" || "
           echo -e "${GREP_LOG_LINEBREAK}""$(echo -e "$(format_grep_log "${E}")")" | tee -a "${GREP_LOG_FILE}" >/dev/null
         fi
       fi
@@ -648,7 +665,8 @@ format_grep_log()
 }
 
 add_info_grep_log()
-{
+{ 
+  # GREP_LOG_DELIMITER=";"
   echo "${MODULE_NUMBER}""${GREP_LOG_DELIMITER}""${SUB_MODULE_COUNT}""${GREP_LOG_DELIMITER}"
 }
 
@@ -1005,12 +1023,14 @@ secure_sleep() {
 print_running_modules() {
   while true; do
     if [[ -f "${LOG_DIR}""/""${MAIN_LOG_FILE}" ]]; then
+    # check_emba_ended():  在日志中查找 Test ended 字段判断emba是否完成扫描 
       if check_emba_ended; then
         exit
       fi
     fi
 
     # we print status about running modules every hour
+    # 每一个小时打印正在允许的模块
     secure_sleep 3600
 
     local STARTED_EMBA_PROCESSES=()
@@ -1018,6 +1038,7 @@ print_running_modules() {
     mapfile -t STARTED_EMBA_PROCESSES < <(grep starting "${LOG_DIR}""/""${MAIN_LOG_FILE}" | cut -d '-' -f2 | awk '{print $1}' || true)
 
     for EMBA_STARTED_PROC in "${STARTED_EMBA_PROCESSES[@]}"; do
+      # 在日志中使用 grep 匹配得知哪些进程已完成，跳过匹配内容，打印正在运行的模块信息
       if ! grep -i -q "${EMBA_STARTED_PROC}"" finished" "${LOG_DIR}""/""${MAIN_LOG_FILE}"; then
         print_output "[*] $(print_date) - ${ORANGE}${EMBA_STARTED_PROC}${NC} currently running" "no_log"
       fi
@@ -1036,5 +1057,6 @@ show_runtime() {
 
 print_date() {
   local LANG=""
+  # 英文格式输出时间
   LANG=en date
 }

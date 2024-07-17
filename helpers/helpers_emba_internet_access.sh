@@ -47,6 +47,7 @@ kernel_downloader() {
   fi
   # now we should have a csv log with a kernel version:
   if ! [[ -f "${LOG_FILE_KERNEL}" ]]; then
+    # print_date(): helpers_emba_print.sh 中定义
     OUTPUTTER="[-] $(print_date) - No Kernel version identified ..."
     print_output "${OUTPUTTER}" "no_log"
     write_log "${OUTPUTTER}" "${LOG_DIR}/s24_kernel_bin_identifier/kernel_downloader.log"
@@ -55,6 +56,11 @@ kernel_downloader() {
   local K_VERSIONS=()
   local K_VERSION=""
 
+  # -d\; 指定分隔符为 ;
+  # -f2  提取第二个字段
+  # tail -n +2 从第二行开始输出
+  # sort -u 排序并去重
+  # mapfile -t: 将内容读入数组，-t 去除每行末尾的换行符
   mapfile -t K_VERSIONS < <(cut -d\; -f2 "${LOG_FILE_KERNEL}" | tail -n +2 | sort -u | grep -E "[0-9]+(\.[0-9]+)+?" || true)
 
   for K_VERSION in "${K_VERSIONS[@]}"; do

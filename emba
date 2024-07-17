@@ -438,6 +438,9 @@ main() {
   if [[ "${ONLY_DEP}" -eq 0 ]]; then
     if [[ "${UPDATE}" -eq 1 ]]; then
       write_notification "EMBA starts with update"
+      # 更新 git 仓库
+      # 更新 EPSS、nvd 数据库
+      # 更新 docker 镜像
       emba_updater
       exit 0
     fi
@@ -495,11 +498,15 @@ main() {
     # create log directory, if not exists and needed subdirectories
     # do not create a log dir for dep check
     export MAIN_LOG="${LOG_DIR}""/""${MAIN_LOG_FILE}"
+    # &&: 如果第一个条件为真，执行后面的命令
     [[ "${ONLY_DEP}" -eq 0 ]] && create_log_dir
 
     # kernel downloader runs on the host and waits for an identified kernel version. Afterwards
     # it tries to download the kernel sources for further analysis
     if [[ ${IN_DOCKER} -eq 0 ]]; then
+      # 识别内核版本后，在 S24 模块分析完成后，下载内核源码进行进一步分析
+      # 默认直接下载，没有判断是否存在文件再决定下载的逻辑，下载内容平均大小在 40m
+      # 使用 wget 工具下载 https://mirrors.edge.kernel.org/pub/linux/kernel/
       kernel_downloader &
       K_DOWN_PID="$!"
       store_kill_pids "${K_DOWN_PID}"
@@ -511,15 +518,19 @@ main() {
     fi
 
     if [[ "${IN_DOCKER}" -eq 0 ]]; then
+      # & : 将前面的命令或函数放入后台执行，不会等待它完成，而是继续执行后续的命令
       print_notification &
       NOTIFICATION_PID="$!"
       store_kill_pids "${NOTIFICATION_PID}"
+      # disown : 内置命令，用来从当前的 shell 会话中移除进程
       disown "${NOTIFICATION_PID}" 2> /dev/null || true
       print_output "[*] $(print_date) - Original user: ${ORANGE}${SUDO_USER:-${USER}}${NC}" "no_log"
       print_output "[*] $(print_date) - Notification process started with PID ${ORANGE}${NOTIFICATION_PID}${NC}" "no_log"
+      # env : 打印当前的环境变量
       PROXY="$(sudo -E -u "${SUDO_USER:-${USER}}" env | grep -E "http(s)_proxy" | cut -d = -f2 || true)"
       echo "${SUDO_USER:-${USER}}" > "${LOG_DIR}"/orig_user.log
       {
+        # id : 显示用户和组身份信息的命令行工具
         echo "UID: $(id -u "${SUDO_USER:-${USER}}")"
         echo "GID: $(id -g "${SUDO_USER:-${USER}}")"
         echo "PROXY: ${PROXY}"
@@ -527,7 +538,9 @@ main() {
     fi
 
     if [[ "${IN_DOCKER}" -eq 0 ]]; then
+      # 后台运行，不影响运行时间
       print_running_modules &
+      # $! : 在脚本中获取最近一次在后台执行的进程 PID
       RUN_MOD_PID="$!"
       store_kill_pids "${RUN_MOD_PID}"
       echo "${RUN_MOD_PID}" > "${LOG_DIR}"/print_running_modules.pid
@@ -537,6 +550,7 @@ main() {
     # Print additional information about the firmware (-Y, -X, -Z, -N)
     print_firmware_info "${FW_VENDOR}" "${FW_VERSION}" "${FW_DEVICE}" "${FW_NOTES}"
     if [[ "${KERNEL}" -ne 1 ]] && [[ "${CONTAINER_EXTRACT}" -ne 1 ]] && [[ "${ONLY_DEP}" -eq 0 ]]; then
+      # 检查固件包大小，超过 400m 告警
       check_init_size
     fi
 
@@ -561,11 +575,13 @@ main() {
       fi
     elif [[ "${CONTAINER_EXTRACT}" -eq 1 ]]; then
       PRE_CHECK=1
+      # print_output() 第二个参数设置为 no_log 表示不记录该内容
       print_output "[*] $(print_date) - Firmware analysis of docker image starting." "no_log"
       print_output "    EMBA starts with extracting the docker image ${ORANGE}${CONTAINER_ID}${NC}." "no_log"
       export FIRMWARE_PATH="${LOG_DIR}"/firmware/firmware_docker_extracted.tar
       export OUTPUT_DIR="${FIRMWARE_PATH}"
       export FIRMWARE=1
+      # -z 判断字符串是否为空
     elif [[ -f "${FIRMWARE_PATH}" ]] && [[ -z "${FIRMWARE_PATH1}" ]]; then
       PRE_CHECK=1
       if [[ -n "${KERNEL_CONFIG}" && "${KERNEL}" -eq 1 ]]; then
@@ -589,6 +605,8 @@ main() {
     if [[ ${THREADED} -eq 1 ]] && [[ "${MAX_MODS}" -eq 0 ]]; then
       # the maximum modules in parallel
       # rule of thumb - per core half a module, minimum 2 modules
+      # grep -c ^processor /proc/cpuinfo : 统计系统中处理器的数量
+      # MAX_MODS 数量为 (处理器数量/2)+1，即同时运行模块的数量
       MAX_MODS="$(( "$(grep -c ^processor /proc/cpuinfo)" /2 +1))"
 
       # if we have only one core we run two modules in parallel
@@ -602,6 +620,7 @@ main() {
     if [[ ${THREADED} -eq 1 ]] && [[ "${MAX_MOD_THREADS}" -eq 0 ]]; then
       # the maximum threads per modules - if this value does not match adjust it via
       # local MAX_MOD_THREADS=123 in module area
+      # 每个模块的最大线程数为 2*处理器数量
       export MAX_MOD_THREADS="$(( 2* "$(grep -c ^processor /proc/cpuinfo)" ))"
     fi
 
@@ -630,12 +649,17 @@ main() {
 
     if [[ ${LOG_GREP} -eq 1 ]] ; then
       # Create grep-able log file
+      # 生成文件 ${LOG_DIR}""/fw_grep_log.log
       create_grep_log
+      # write_grep_log()
+        # ${1}: OUTPUT_ARR
+        # ${2:-}: MESSAGE_TYPE_PAR
       write_grep_log "sudo ""${EMBA_COMMAND}" "COMMAND"
     fi
 
     if [[ "${KERNEL}" -ne 1 ]] && [[ ${FIRMWARE} -eq 1 ]]; then
       # Exclude paths from testing and set EXCL_FIND for find command (prune paths dynamicially)
+      # 设置不受测试影响的路径，预定义 /proc /sys /$(pwd)
       set_exclude
     fi
 
@@ -674,7 +698,10 @@ main() {
     # if $CONTAINER_EXTRACT is set we extract the docker container with id $CONTAINER_ID outside of the
     # EMBA container into log directory
     # we do this outside of the EMBA container - otherwise we will not reach the docker environment
+    # 将 EMBA 容器外的 id 为 $CONTAINER_ID 的 docker 容器提取到日志目录中
     if [[ "${CONTAINER_EXTRACT}" -eq 1 && "${IN_DOCKER}" -eq 0 ]] ; then
+      # docker_container_extractor() 定义在 helpers_emba_extractors.sh 中
+      # 使用 docker export 工具导出 docker 容器
       docker_container_extractor "${CONTAINER_ID}"
     fi
   fi
@@ -699,6 +726,7 @@ main() {
         D|f|i|l|o)
           ;;
         *)
+          # -v 变量是否声明
           if [[ -v OPTARG[@] ]] ; then
             ARGUMENTS=( "${ARGUMENTS[@]}" "-${OPT}" "${OPTARG[@]}" )
           else

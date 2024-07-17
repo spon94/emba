@@ -796,6 +796,7 @@ prepare_report() {
 
   if [ ! -d "${ABS_HTML_PATH}${STYLE_PATH}" ] ; then
     mkdir -p "${ABS_HTML_PATH}${STYLE_PATH}" || true
+    # 导入 helper 文件夹中的 html 资源文件
     cp "${HELP_DIR}/style.css" "${ABS_HTML_PATH}${STYLE_PATH}/style.css" || true
     cp "${HELP_DIR}/emba.svg" "${ABS_HTML_PATH}${STYLE_PATH}/emba.svg" || true
     cp "${HELP_DIR}/embark.svg" "${ABS_HTML_PATH}${STYLE_PATH}/embark.svg" || true
@@ -811,6 +812,11 @@ prepare_report() {
     mkdir -p "${ABS_HTML_PATH}${SUPPL_PATH_HTML}" || true
   fi
 
+  # 使用 base.html 模板生成扫描结果的index文件
   cp "./helpers/base.html" "${ABS_HTML_PATH}""/""${INDEX_FILE}" || true
+  # -i 直接在文本中进行替换，修改文件本身
+  # s  表示替换 substitute
+  # @  分隔符，可选用其它分隔符例如 # 等，在处理包含 / 的路径时，使用 @ 可以避免冲突
+  # g  全局替换
   sed -i 's@backButton@backButton hidden@g' "${ABS_HTML_PATH}""/""${INDEX_FILE}"
 }

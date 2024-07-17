@@ -150,6 +150,7 @@ set_exclude()
   # exclude paths from testing and set EXCL_FIND for find command (prune paths dynamicially)
   EXCLUDE_PATHS="$(set_excluded_path)"
   export EXCL_FIND=()
+  # tr '\r\n' ' ' : 将输入中的所有回车符和换行符替换为空格
   IFS=" " read -r -a EXCL_FIND <<< "$( echo -e "$(get_excluded_find "${EXCLUDE_PATHS}")" | tr '\r\n' ' ' | tr -d '\n' 2>/dev/null)"
   print_excluded
 }
@@ -662,7 +663,8 @@ detect_root_dir_helper() {
 
 check_init_size() {
   local lSIZE=""
-
+  # du 用于查看文件和目录磁盘的使用情况
+  # -b 和 --max-depth=0 可以显示某单个文件或目录的大小，字节为单位
   lSIZE=$(du -b --max-depth=0 "${FIRMWARE_PATH}"| awk '{print $1}' || true)
   if [[ ${lSIZE} -gt 400000000 ]]; then
     print_ln "no_log"
