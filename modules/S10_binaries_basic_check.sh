@@ -42,6 +42,9 @@ S10_binaries_basic_check()
     for BINARY in "${BINARIES[@]}" ; do
       if ( file "${BINARY}" | grep -q "ELF" ) ; then
         BIN_COUNT=$((BIN_COUNT+1))
+        # readelf -s --use-dynamic
+          # -s: 显示符号表
+          # --use-dynamic: 显示动态符号表
         mapfile -t VUL_FUNC_RESULT < <(readelf -s --use-dynamic "${BINARY}" 2> /dev/null | grep -we "${VUL_FUNC_GREP[@]}" | grep -v "file format" || true)
         if [[ "${#VUL_FUNC_RESULT[@]}" -ne 0 ]] ; then
           print_ln

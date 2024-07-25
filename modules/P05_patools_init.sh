@@ -55,6 +55,7 @@ patools_extractor() {
 
   FIRMWARE_NAME_="$(basename "${FIRMWARE_PATH_}")"
 
+  # set +e: 关闭"立即退出"模式，使得即使某个命令失败，脚本也会继续执行
   [[ "${STRICT_MODE}" -eq 1 ]] && set +e
 
   patool -v test "${FIRMWARE_PATH_}" 2>&1 | tee -a "${LOG_PATH_MODULE}"/paextract_test_"${FIRMWARE_NAME_}".log

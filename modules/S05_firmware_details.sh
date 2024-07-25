@@ -48,12 +48,20 @@ filesystem_tree() {
   # excluded paths will be also printed
   if command -v tree > /dev/null 2>&1 ; then
     if [[ ${FORMAT_LOG} -eq 1 ]] ; then
+      # -p : 显示文件权限
+      # -s : 显示文件大小
+      # -a : 包括隐藏文件
+      # -C : 用颜色区分文件类型
+      # -n : 不使用颜色
       tree -p -s -a -C "${LPATH}" >> "${LOG_FILE}" || true
     else
       tree -p -s -a -n "${LPATH}" >> "${LOG_FILE}" || true
     fi
   else
     if [[ ${FORMAT_LOG} -eq 1 ]] ; then
+      # -l: 长格式列出文件信息，包括权限、所有者、大小和修改时间
+      # -a: 包括隐藏文件
+      # -R: 递归列出子目录文件
       ls -laR "${LPATH}" >> "${LOG_FILE}"
     else
       ls -laR --color=never "${LPATH}" >> "${LOG_FILE}"
@@ -67,7 +75,7 @@ release_info() {
   local R_INFO=""
   local RELEASE=""
   local RELEASE_STUFF=()
-
+  
   mapfile -t RELEASE_STUFF < <(config_find "${CONFIG_DIR}""/release_files.cfg")
   if [[ "${RELEASE_STUFF[0]-}" == "C_N_F" ]] ; then print_output "[!] Config not found"
   elif [[ "${#RELEASE_STUFF[@]}" -gt 0 ]] ; then

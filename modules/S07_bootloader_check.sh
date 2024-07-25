@@ -48,6 +48,7 @@ check_dtb()
     for DTB_FILE in "${DTB_ARR[@]}" ; do
       print_output "$(indent "${DTB_FILE}")"
       if [[ ${DTBDUMP} -eq 1 ]] ; then
+        # fdtdump: 传出 .dtb 文件内容
         write_log "$(fdtdump "${DTB_FILE}" 2> /dev/null || true)" "${LOG_PATH_MODULE}""/""$(basename "${DTB_FILE}" .dtb)""-DUMP.txt" "g"
         write_link "${LOG_PATH_MODULE}""/""$(basename "${DTB_FILE}" .dtb)""-DUMP.txt"
         ((STARTUP_FINDS+=1))
@@ -367,6 +368,7 @@ find_runlevel()
     if [[ -d "${SYSTEMD_P}" ]] ; then
       print_output "[*] Check runlevel in systemd directory: ""$(print_path "${SYSTEMD_P}")"
       DEFAULT_TARGET_PATH="${SYSTEMD_P}""/system/default.target"
+      # -L : 检查是否为符号链接
       if [[ -L "${DEFAULT_TARGET_PATH}" ]] ; then
         FIND="$( read -r "${DEFAULT_TARGET_PATH}"'' | grep "runlevel" || true)"
         if [[ -z "${FIND}" ]] ; then

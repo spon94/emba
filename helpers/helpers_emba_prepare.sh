@@ -209,12 +209,14 @@ architecture_check() {
       D_ARCH_GUESSED="${D_ARCH_GUESSED%%,/}"
       D_ARCH_GUESSED="${D_ARCH_GUESSED##,/}"
 
+      # file -b: 简洁模式输出结果
       D_ARCH=$(file -b "${BINARY}")
 
       MD5SUM="$(md5sum "${BINARY}" || print_output "[-] Checksum error for binary ${BINARY}" "no_log")"
       MD5SUM="${MD5SUM/\ *}"
 
       if [[ "${D_ARCH}" == *"MSB"* ]] ; then
+        # $(( ... )): Bash 的算术扩展，用于执行整数算术运算
         D_END_BE=$((D_END_BE+1))
       elif [[ "${D_ARCH}" == *"LSB"* ]] ; then
         D_END_LE=$((D_END_LE+1))
@@ -480,6 +482,10 @@ prepare_file_arr_limited() {
   echo ""
   print_output "[*] Unique and limited file array generation for ${ORANGE}${FIRMWARE_PATH}${NC} (could take some time)\\n"
 
+  # -t: 去除每行末尾换行符
+  # -xdev: 不跨越文件系统的设备边界
+  # type -f: 只查找文件
+  # !\(...\): 排除括号内指定的文件类型
   readarray -t FILE_ARR_LIMITED < <(find "${FIRMWARE_PATH}" -xdev "${EXCL_FIND[@]}" -type f ! \( -iname "*.udeb" -o -iname "*.deb" \
     -o -iname "*.ipk" -o -iname "*.pdf" -o -iname "*.php" -o -iname "*.txt" -o -iname "*.doc" -o -iname "*.rtf" -o -iname "*.docx" \
     -o -iname "*.htm" -o -iname "*.html" -o -iname "*.md5" -o -iname "*.sha1" -o -iname "*.torrent" -o -iname "*.png" -o -iname "*.svg" \

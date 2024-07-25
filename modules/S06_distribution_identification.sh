@@ -39,8 +39,11 @@ S06_distribution_identification()
   write_csv_log "file" "type" "identifier" "csv_rule"
 
   while read -r CONFIG; do
+    # [^#*/;]：表示一个字符类，匹配不包含 #、*、/ 和 ; 的任意字符
     if safe_echo "${CONFIG}" | grep -q "^[^#*/;]"; then
       SEARCH_FILE="$(safe_echo "${CONFIG}" | cut -d\; -f2)"
+      # -xdev: find 只会在当前文件系统中查找，不会进入挂载在当前文件系统中的其他文件系统
+      # -iwholename 选项用于忽略大小写地匹配文件的完整路径名
       mapfile -t FOUND_FILES < <(find "${FIRMWARE_PATH}" -xdev -iwholename "*${SEARCH_FILE}" || true)
       for FILE in "${FOUND_FILES[@]}"; do
         if [[ -f "${FILE}" ]]; then

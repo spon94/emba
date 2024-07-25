@@ -41,6 +41,7 @@ P02_firmware_bin_file_check() {
   fi
 
   local FILE_LS_OUT=""
+  # -lh: -l 长格式显示；-h 人类可读显示
   FILE_LS_OUT=$(ls -lh "${FIRMWARE_PATH}")
 
   print_ln
@@ -76,6 +77,8 @@ print_fw_file_details() {
 
   print_output "$(indent "$(file "${FIRMWARE_PATH_BIN}")")"
   print_ln
+  # hexdump -C：使用 hexdump 命令以十六进制和 ASCII 格式显示文件内容
+  # head：默认情况下，head 命令显示前 10 行输出
   hexdump -C "${FIRMWARE_PATH_BIN}"| head | tee -a "${LOG_FILE}" || true
   print_ln
   print_output "[*] SHA512 checksum: ${ORANGE}${SHA512_CHECKSUM}${NC}"

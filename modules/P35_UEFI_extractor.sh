@@ -138,7 +138,8 @@ uefi_firmware_parser() {
   local FIRMWARE_PATH_="${1:-}"
   local FW_NAME_=""
   FW_NAME_="$(basename "${FIRMWARE_PATH_}")"
-
+  # uefi-firmware-parser 是一个用于解析和分析 UEFI 固件镜像的工具
+  # uefi-firmware-parser 的 -b 参数用于提取 UEFI 固件镜像的基本信息，帮助用户快速了解固件的概要内容
   uefi-firmware-parser -b "${FIRMWARE_PATH_}" > "${LOG_PATH_MODULE}"/uefi-firmware-parser_"${FW_NAME_}".txt
 
   if [[ -s "${LOG_PATH_MODULE}"/uefi-firmware-parser_"${FW_NAME_}".txt ]]; then

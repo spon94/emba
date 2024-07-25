@@ -33,6 +33,7 @@ S09_firmware_base_version_check() {
 
   local EXTRACTOR_LOG="${LOG_DIR}"/p55_unblob_extractor/unblob_firmware.log
 
+  # tr -d "\n": 删除换行符
   print_output "[*] Static version detection running ..." "no_log" | tr -d "\n"
   write_csv_log "binary/file" "version_rule" "version_detected" "csv_rule" "license" "static/emulation"
 
@@ -103,8 +104,11 @@ S09_firmware_base_version_check() {
     fi
 
     VERSION_IDENTIFIER="$(safe_echo "${VERSION_LINE}" | cut -d\; -f4)"
+    # ${VARIABLE:OFFSET:LENGTH} : 用于提取字符串的一部分
     if [[ "${VERSION_IDENTIFIER: 0:1}" == '"' ]]; then
+      # ${VARIABLE/PATTERN/REPLACEMENT} : 用于将字符串中的 PATTERN 替换为 REPLACEMENT
       VERSION_IDENTIFIER="${VERSION_IDENTIFIER/\"}"
+      # ${VARIABLE%PATTERN} : 用于删除字符串末尾匹配 PATTERN 的部分
       VERSION_IDENTIFIER="${VERSION_IDENTIFIER%\"}"
     fi
 
@@ -130,6 +134,7 @@ S09_firmware_base_version_check() {
           if ! [[ -f "${STRINGS_OUTPUT}" ]]; then
             continue
           fi
+          # grep -a: 将二进制文件视为文本文件进行处理
           VERSION_FINDER=$(grep -a -E "${VERSION_IDENTIFIER}" "${STRINGS_OUTPUT}" | sort -u || true)
           if [[ -n ${VERSION_FINDER} ]]; then
             print_ln "no_log"
@@ -159,6 +164,7 @@ S09_firmware_base_version_check() {
         CSV_REGEX="$(echo "${VERSION_LINE}" | cut -d\; -f5)"
         CSV_REGEX="${CSV_REGEX/\"}"
         CSV_REGEX="${CSV_REGEX%\"}"
+        # -dc 选项组合用于删除所有不匹配指定字符集的字符
         VERSION_FINDER=$(safe_echo "${SFILE}" | cut -d ":" -f2-3 | tr -dc '[:print:]')
         get_csv_rule "${VERSION_FINDER}" "${CSV_REGEX}"
         print_output "[+] Version information found ${RED}""${VERSION_FINDER}""${NC}${GREEN} in binary ${ORANGE}$(print_path "${BIN_PATH}")${GREEN} (license: ${ORANGE}${LIC}${GREEN}) (${ORANGE}static - zgrep${GREEN})."
@@ -253,6 +259,7 @@ generate_strings() {
   # if we do not talk about a RTOS it is a Linux and we test ELF files
   if [[ ${RTOS} -eq 0 ]]; then
     BIN_FILE=$(file "${BIN}" || true)
+    # 如果 BIN_FILE 不包含 *uImage*,*Kernel\ Image*,*ELF* 任意一个则返回
     if ! [[ "${BIN_FILE}" == *uImage* || "${BIN_FILE}" == *Kernel\ Image* || "${BIN_FILE}" == *ELF* ]] ; then
       return
     fi
@@ -274,6 +281,8 @@ bin_string_checker() {
   # load VERSION_IDENTIFIER string into array for multi_grep handling
   # nosemgrep
   local IFS='&&'
+  # -a VERSION_IDENTIFIERS_ARR：将输入分割并存储到数组 VERSION_IDENTIFIERS_ARR 中
+  # <<< "${VERSION_IDENTIFIER}"：使用 Here String 将变量 VERSION_IDENTIFIER 的值作为输入传递给 read 命令
   IFS='&&' read -r -a VERSION_IDENTIFIERS_ARR <<< "${VERSION_IDENTIFIER}"
 
   local BIN_FILE=""
@@ -306,6 +315,7 @@ bin_string_checker() {
         BIN_FILE=$(file "${BIN}" || true)
         # as the FILE_ARR array also includes non binary stuff we have to check for relevant files now:
         if ! [[ "${BIN_FILE}" == *uImage* || "${BIN_FILE}" == *Kernel\ Image* || "${BIN_FILE}" == *ELF* ]] ; then
+          # 2：数字参数，指定要跳过的第几层外部循环
           continue 2
         fi
 

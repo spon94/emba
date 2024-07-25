@@ -69,9 +69,13 @@ fwhunter() {
   done
 
   print_output "[*] Running FwHunt on ${ORANGE}${FWHUNTER_CHECK_FILE}${NC}" "" "${LOG_PATH_MODULE}""/fwhunt_scan_${FWHUNTER_CHECK_FILE_NAME}.txt"
+  # ulimit: 用于设置或显示当前shell会话的资源限制
+    # -S: 表示设置软限制
+    # -v: 表示虚拟内存限制（kb为单位）
   ulimit -Sv "${MEM_LIMIT}"
   write_log "[*] Running FwHunt on ${ORANGE}${FWHUNTER_CHECK_FILE}${NC}" "${LOG_PATH_MODULE}""/fwhunt_scan_${FWHUNTER_CHECK_FILE_NAME}.txt"
   timeout --preserve-status --signal SIGINT 600 python3 "${EXT_DIR}"/fwhunt-scan/fwhunt_scan_analyzer.py scan-firmware "${FWHUNTER_CHECK_FILE}" --rules_dir "${EXT_DIR}"/fwhunt-scan/rules/ | tee -a "${LOG_PATH_MODULE}""/fwhunt_scan_${FWHUNTER_CHECK_FILE_NAME}.txt" || true
+  # 移除限制
   ulimit -Sv unlimited
 
   # delete empty log files

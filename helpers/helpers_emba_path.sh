@@ -280,6 +280,7 @@ config_find() {
         fi
       done
 
+      # eval: 首先解析字符串内容，然后将解析后的内容作为命令执行
       eval "FIND_RESULTS=($(for i in "${FIND_RESULTS[@]}" ; do echo "\"${i}\"" ; done | sort -u))"
       # Todo: we should remove this and use the FIND_RESULTS array in the modules
       for LINE in "${FIND_RESULTS[@]}"; do

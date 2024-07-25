@@ -80,6 +80,7 @@ os_identification() {
 
   OS_SEARCHER=("Linux" "FreeBSD" "VxWorks\|Wind" "FreeRTOS" "ADONIS" "eCos" "uC/OS" "SIPROTEC" "QNX" "CPU\ [34][12][0-9]-[0-9]" "CP443" "Sinamics" "UEFI" "HelenOS" "Windows\ CE")
   print_dot
+  # declare -A: 声明关联数组
   declare -A OS_COUNTER=()
   local WAIT_PIDS_S03_1=()
 
@@ -111,6 +112,11 @@ os_detection_thread_per_os() {
   local OS_=""
 
   OS_COUNTER[${OS}]=0
+  # $((...))：算术扩展，将当前计数值与新找到的文件数量相加
+  # ${OS_COUNTER[${OS}]}：从关联数组 OS_COUNTER 中获取当前操作系统 ${OS} 的计数值
+  # find "${OUTPUT_DIR}" -xdev -type f: 在目录 ${OUTPUT_DIR} 中查找所有文件（不跨越文件系统边界）
+  # -exec strings {} \;：对找到的每个文件执行 strings 命令，提取可打印的字符串
+  # | grep -i -c "${OS}"：将 strings 的输出传递给 grep，统计包含 ${OS} 字符串的行数
   OS_COUNTER[${OS}]=$(("${OS_COUNTER[${OS}]}"+"$(find "${OUTPUT_DIR}" -xdev -type f -exec strings {} \; | grep -i -c "${OS}" 2> /dev/null || true)"))
   if [[ -f "${LOG_DIR}"/p60_firmware_bin_extractor.txt ]]; then
     OS_COUNTER[${OS}]=$(("${OS_COUNTER[${OS}]}"+"$(find "${LOG_DIR}" -maxdepth 1 -xdev -type f -name "p60_firmware_bin_extractor.txt" -exec grep -i -c "${OS}" {} \; 2> /dev/null || true)" ))
@@ -188,11 +194,15 @@ binary_architecture_detection() {
 
 
   # as Thumb is usually false positive we remove it from the results
+  # binwalk -Y: 使用 capstone 反汇编程序识别文件中包含的可执行代码的 CPU 体系结构
   mapfile -t PRE_ARCH_Y < <(binwalk -Y "${FILE_TO_CHECK}" | grep "valid\ instructions" | grep -v "Thumb" | \
     awk '{print $3}' | sort -u || true)
+  # binwalk -A: 扫描操作码
   mapfile -t PRE_ARCH_A < <(binwalk -A "${FILE_TO_CHECK}" | grep "\ instructions," | awk '{print $3}' | \
     uniq -c | sort -n | tail -1 | awk '{print $2}' || true)
 
+  # https://github.com/airbus-seclab/cpu_rec
+  # cpu_rec: 识别任意二进制文件中cpu指令的工具, binwalk -% 激活插件
   if [[ -f "${HOME}"/.config/binwalk/modules/cpu_rec.py ]]; then
     # entropy=0.9xxx is typically encrypted or compressed -> we just remove these entries:
     PRE_ARCH_CPU_REC=$(binwalk -% "${FILE_TO_CHECK}"  | grep -v "DESCRIPTION\|None\|-----------" | grep -v "entropy=0.9" \

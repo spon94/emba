@@ -94,11 +94,15 @@ sort_modules()
   local SORTED_MODULES=()
   local MODULE_FILE=""
   for MODULE_FILE in "${MODULES[@]}" ; do
+    # 1、使用 file 检查是否是 shell 脚本文件
+    # 2、检查文件名是否包含空格或单引号
     if ( file "${MODULE_FILE}" | grep -q "shell script" ) && ! [[ "${MODULE_FILE}" =~ \ |\' ]] ; then
       THREAD_PRIO=0
       # https://github.com/koalaman/shellcheck/wiki/SC1090
       # shellcheck source=/dev/null
+      # 使用 source 导入脚本文件
       source "${MODULE_FILE}"
+      # 检查是否针对模块设置优先级
       if [[ ${THREAD_PRIO} -eq 1 ]] ; then
         SORTED_MODULES=( "${MODULE_FILE}" "${SORTED_MODULES[@]}" )
       else
@@ -115,22 +119,31 @@ sort_modules()
 run_modules()
 {
   MODULE_GROUP="${1:-}"
+  # printf -v: 用于将格式化输出直接赋值给变量，不打印到标准输出
   printf -v THREADING_SET '%d\n' "${2}" 2>/dev/null
   THREADING_MOD_GROUP="${THREADING_SET}"
 
   local SELECT_PRE_MODULES_COUNT=0
 
+  # SELECT_MODULES: 模块执行过程中的依赖模块
   for SELECT_NUM in "${SELECT_MODULES[@]}" ; do
+    # =~: 正则表达式匹配符
+    # ${MODULE_GROUP,,}: 将变量 MODULE_GROUP 的值全部转换为小写。,, 表示小写转换
+    # ${MODULE_GROUP^^}: 将变量 MODULE_GROUP 的值全部转换为大写。^^ 表示大写转换
+    # ["${MODULE_GROUP,,}","${MODULE_GROUP^^}"]{1}:
+      # 正则表达式的一部分，表示一个字符集，包含小写和大写形式的 MODULE_GROUP
     if [[ "${SELECT_NUM}" =~ ^["${MODULE_GROUP,,}","${MODULE_GROUP^^}"]{1} ]]; then
       (( SELECT_PRE_MODULES_COUNT+=1 ))
     fi
   done
-
+  # ${#}: 用于获取变量长度
+  # [@]: 表示数组的所有元素
   if [[ "${#SELECT_MODULES[@]}" -eq 0 ]] || [[ "${SELECT_PRE_MODULES_COUNT}" -eq 0 ]]; then
     local MODULES=()
     local MODULES_LOCAL=()
     local MODULES_EMBA=()
-
+    
+    # mapfile -t: 将文件内容或命令输出读入数组，-t  用于去除每行末尾的换行符 
     mapfile -t MODULES_EMBA < <(find "${MOD_DIR}" -name "${MODULE_GROUP^^}""*_*.sh" | sort -V 2> /dev/null)
     if [[ -d "${MOD_DIR_LOCAL}" ]]; then
       mapfile -t MODULES_LOCAL < <(find "${MOD_DIR_LOCAL}" -name "${MODULE_GROUP^^}""*.sh" 2>/dev/null | sort -V 2> /dev/null)
@@ -142,11 +155,14 @@ run_modules()
     fi
     for MODULE_FILE in "${MODULES[@]}" ; do
       # check if "${MODULE_NAME}" is in blacklist from config directory and skip it
+      # bashname -s .sh: 去除路径信息，-s 用于去除指定的后缀
       MODULE_NAME=$(basename -s .sh "${MODULE_FILE}")
+      # 检测黑名单模块信息，跳过模块执行
       if [[ " ${MODULE_BLACKLIST[*]} " =~  ${MODULE_NAME}  ]]; then
         print_output "[*] $(print_date) - ${MODULE_NAME} not executed - blacklist triggered " "main"
         continue
       fi
+      # 如果当前是 P 组模块运行阶段，且设置跳过 pre-check，略过运行
       if [[ "${SKIP_PRE_CHECKERS}" == 1 ]] && [[ "${MODULE_GROUP}" == "P" ]]; then
         print_output "[*] $(print_date) - ${MODULE_NAME} not executed - skip pre-checkers is set " "main"
         continue
@@ -163,24 +179,39 @@ run_modules()
           fi
         fi
         MODULE_BN=$(basename "${MODULE_FILE}")
+        # ${MODULE_BN%.*}: 去除文件名称后的拓展名
         MODULE_MAIN=${MODULE_BN%.*}
         # module_start_log "${MODULE_MAIN}"
+        # 如果检测到工具重启，即在日志中发现重启标识符
         if [[ "${RESTART}" -eq 1 ]]; then
+          # grep -c: 只输出匹配的行数
           if [[ $(grep -i -c "${MODULE_MAIN} finished" "${LOG_DIR}"/"${MAIN_LOG_FILE}") -gt 0 ]]; then
+            # 如果是 P99 或 L1 模块完成后发生重启，仍然重新执行模块
             if [[ "${MODULE_MAIN}" == "P99_"* ]] || [[ "${MODULE_MAIN}" == "L1"* ]]; then
               print_output "[*] $(print_date) - Module ${ORANGE}${MODULE_MAIN}${NC} already finished but essential - rerun it" "main"
               MOD_FIN=0
+            # 其他模块检测到重启直接跳过
             else
               print_output "[*] $(print_date) - Module ${ORANGE}${MODULE_MAIN}${NC} already finished ... skipping" "main"
               MOD_FIN=1
+              # 如果制定了打印网页报告，为跳过的模块生成报告
               if [[ ${HTML} -eq 1 ]] ; then
                 # we need to build the web reporter links for skipping modules
                 mapfile -t LOG_FILES < <(find "${LOG_DIR}" -maxdepth 1 -type f -iname "${MODULE_MAIN}*.txt" | sort)
                 for LOG_FILE_ in "${LOG_FILES[@]}"; do
+                  # 如果日志文件中出现 nothing reported，则跳过该模块报告的生成
                   if grep -q "nothing reported" "${LOG_FILE_}"; then
                     continue
                   fi
                   MODULE_NAME_=$(basename -s .txt "${LOG_FILE_}")
+                  # grep
+                    # -a: 以文本模式处理二进制文件
+                    # -E: 使用拓展正则表达式
+                    # -B 1: 显示匹配行以及匹配行的前一行
+                    # [=]{65}: 包含 65 个 = 的行
+                  # cut
+                    # -d" ": 空格为分隔符
+                    # -f2-:  提取从第二个字段到最后的字段
                   MODUL_NAME="$( strip_color_tags "$(grep -a -E -B 1 '[=]{65}' "${LOG_FILE_}" | head -n 1 )" | cut -d" " -f2- )"
                   HTML_FILE="${MODULE_NAME_}.html"
                   add_link_to_index "${HTML_FILE}" "${MODUL_NAME}"
@@ -189,10 +220,14 @@ run_modules()
             fi
           fi
         fi
+        # 如果模块未完成执行，在后台执行模块
+        # 各模块入口函数就是模块文件去除后缀
         if [[ "${MOD_FIN}" -eq 0 ]]; then
           if [[ ${THREADING_SET} -eq 1 ]]; then
             "${MODULE_MAIN}" &
+            # $!: 最近启动的后台进程的PID
             MOD_PID="$!"
+            # 记录该进程id，方便中断后退出进程
             store_kill_pids "${MOD_PID}"
             WAIT_PIDS+=( "${MOD_PID}" )
             max_pids_protection "${MAX_MODS}" "${WAIT_PIDS[@]}"
@@ -215,6 +250,7 @@ run_modules()
 
     for SELECT_NUM in "${SELECT_MODULES[@]}" ; do
       local MOD_FIN=0
+      # 执行 SELECT 模块
       if [[ "${SELECT_NUM}" =~ ^["${MODULE_GROUP,,}","${MODULE_GROUP^^}"]{1}[0-9]+ ]]; then
         local MODULE=""
         MODULE=$(find "${MOD_DIR}" -name "${MODULE_GROUP^^}""${SELECT_NUM:1}""_*.sh" | sort -V 2> /dev/null)
@@ -261,6 +297,7 @@ run_modules()
           fi
           reset_module_count
         fi
+
       elif [[ "${SELECT_NUM}" =~ ^["${MODULE_GROUP,,}","${MODULE_GROUP^^}"]{1} ]]; then
         local MODULES=()
         local MODULES_LOCAL=()

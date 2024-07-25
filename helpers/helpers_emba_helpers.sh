@@ -57,10 +57,17 @@ wait_for_pid() {
 max_pids_protection() {
   if [[ -n "${1:-}" ]]; then
     local MAX_PIDS_="${1:-}"
+    # shift: 内置命令，用于移动位置参数的次序
+      # $1 值被丢弃，原 $2 变更为 新 $1 
     shift
   else
     local MAX_PIDS_="${MAX_MODS:1}"
   fi
+  # $@: 传递给脚本或函数的所有参数
+  # "$@"：将每个参数作为独立的字符串处理，即使参数中包含空格。
+    # 保持参数的独立性
+  # "$*"：将所有参数作为一个单独的字符串处理，并使用第一个字符（通常是空格）作为分隔符
+    # 将所有参数合并为一个字符串
   local WAIT_PIDS=("$@")
   local PID=""
 
@@ -69,7 +76,9 @@ max_pids_protection() {
     # check for really running PIDs and re-create the array
     for PID in "${WAIT_PIDS[@]}"; do
       # print_output "[*] max pid protection: ${#WAIT_PIDS[@]}"
+      # 检测该进程是否存在
       if [[ -e /proc/"${PID}" ]]; then
+        # 检测该进程是否不为僵尸进程
         if ! grep -q "State:.*zombie.*" "/proc/${PID}/status" 2>/dev/null; then
           TEMP_PIDS+=( "${PID}" )
         fi

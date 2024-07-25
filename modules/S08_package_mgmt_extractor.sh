@@ -135,6 +135,9 @@ rpm_package_files_search() {
     for PACKAGE_FILE in "${RPM_PACKAGE_DBS[@]}" ; do
       RPM_DIR="$(dirname "${PACKAGE_FILE}")"
       # not sure this works on an offline system - we need further tests on this:
+      # -q：查询选项，用于查询软件包信息
+      # -a：查询所有已安装的软件包
+      # --dbpath：指定 RPM 数据库的路径
       mapfile -t RPM_PACKAGES < <(rpm -qa --dbpath "${RPM_DIR}" || true)
       for PACKAGE_AND_VERSION in "${RPM_PACKAGES[@]}" ; do
         PACKAGE_VERSION=$(rpm -qi --dbpath "${RPM_DIR}" "${PACKAGE_AND_VERSION}" | grep Version | awk '{print $3}' || true)

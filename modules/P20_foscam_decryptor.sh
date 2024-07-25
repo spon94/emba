@@ -121,7 +121,7 @@ foscam_ubi_extractor() {
   #   print_output "[-] Kernel modules not mounted from host system - please update your docker-compose file!"
   #   return
   # fi
-
+  # ubifs 是一种适用于 NAND 内存的文件系统
   if [[ -f "${EXTRACTION_DIR_GZ}"/app_ubifs ]]; then
     print_output "[*] 2nd extraction round successful - ${ORANGE}app_ubifs${NC} found"
     print_output "[*] Checking nandsim kernel module"
@@ -135,14 +135,23 @@ foscam_ubi_extractor() {
     MTD_DEVICE=$(grep "mtd[0-9]" /proc/mtd | cut -d: -f1)
     print_output "[*] Found ${ORANGE}/dev/${MTD_DEVICE}${NC} MTD device"
     print_output "[*] Erasing ${ORANGE}/dev/${MTD_DEVICE}${NC} MTD device"
+    # flash_erase: 擦除指定的闪存设备上的数据
+    # 第一个 0 表示从设备的起始位置开始擦除，第二个 0 通常表示擦除所有块
     flash_erase /dev/"${MTD_DEVICE}" 0 0 || true
     print_output "[*] Formating ${ORANGE}/dev/${MTD_DEVICE}${NC} MTD device"
+    # ubiformat 是一个用于格式化和写入 UBI 文件系统到MTD设备的工具
+    # -O 2048: 指定了 UBI的偏移量为2048字节，指定UBI头的起始位置，以便兼容某些特定的闪存布局
+    # -f 指定了要写入到 MTD 设备的UBI文件系统镜像文件
     ubiformat /dev/"${MTD_DEVICE}" -O 2048 -f "${EXTRACTION_DIR_GZ}"/app_ubifs || true
     # if ! lsmod | grep -q "^ubi[[:space:]]"; then
     #   print_output "[*] Loading ubi kernel module"
     #   modprobe ubi
     # fi
     print_output "[*] Attaching ubi device"
+    # ubiattach: 用于将 UBI 设备附加到MTD设备上的工具
+    # -p 选项指定了要附加的MTD设备路径
+    # -O 2048 指定了VID header的偏移量
+      # VID header 是 UBI 的一个数据结构，用于存储有关物理擦除块的信息
     ubiattach -p /dev/"${MTD_DEVICE}" -O 2048
 
     # should be only one UBI dev, but just in case ...
@@ -161,6 +170,7 @@ foscam_ubi_extractor() {
 
     # do some cleanup
     print_output "[*] Detaching ubi device"
+    # 将指定的 UBI 设备从 MTD 设备上分离
     ubidetach -d 0 || true
     # print_output "[*] Unloading nandsim module"
     # modprobe -r nandsim || true

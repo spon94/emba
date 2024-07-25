@@ -1,0 +1,19 @@
+# ${LOG_DIR}/firmware：指定要搜索的目录。
+# ${EXCL_FIND[@]}：包含其他需要排除或包含的路径或选项。这里假设 EXCL_FIND 是一个数组，包含一些额外的 find 参数。
+# -xdev：不跨越文件系统边界，只在指定的文件系统中查找。
+# -type d -iname bin：查找名称为 bin 的目录（不区分大小写）。
+# -o -type f -iname busybox：或者查找名称为 busybox 的文件（不区分大小写）。
+# -o -type f -name shadow：或者查找名称为 shadow 的文件。
+# -o -type f -name passwd：或者查找名称为 passwd 的文件。
+# -o -type d -iname sbin：或者查找名称为 sbin 的目录（不区分大小写）。
+# -o -type d -iname etc：或者查找名称为 etc 的目录（不区分大小写）。
+LINUX_PATH_COUNTER="$(find "${LOG_DIR}/firmware" "${EXCL_FIND[@]}" -xdev -type d -iname bin -o -type f -iname busybox -o -type f -name shadow -o -type f -name passwd -o -type d -iname sbin -o -type d -iname etc 2> /dev/null | wc -l)"
+
+# 未检测到 Linux 文件系统
+${RTOS} -eq 1
+
+# 所提供固件的所有有效文件
+$FILE_ARR
+
+# 使用颜色输出
+${FORMAT_LOG} -eq 1
