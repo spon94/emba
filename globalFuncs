@@ -1,4 +1,7 @@
 # 检测是否存在配置文件
 # 配置文件字符串从 config/release_files.cfg 中读取
 # 失败返回 C_N_F
-config_find
+config_find()
+
+# 将文件内容转化为列表，按行划分
+config_list()

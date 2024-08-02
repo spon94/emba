@@ -95,6 +95,7 @@ S115_usermode_emulator() {
 
       local DIR=""
       DIR=$(pwd)
+      # -ignore_readdir_race: 防止在目录内容发生变化时产生错误
       mapfile -t BIN_EMU_TMP < <(cd "${R_PATH}" && find . -xdev -ignore_readdir_race -type f ! \( -name "*.ko" -o -name "*.so" \) -exec file {} \; 2>/dev/null | grep "ELF.*executable\|ELF.*shared\ object" | grep -v "version\ .\ (FreeBSD)" | cut -d: -f1 2>/dev/null && cd "${DIR}" || exit)
       # we re-create the BIN_EMU_ARR array with all unique binaries for every root directory
       # as we have all tested MD5s in MD5_DONE_INT (for all root dirs) we test every bin only once
@@ -128,7 +129,8 @@ S115_usermode_emulator() {
           print_output "[!] BIN ${BIN_EMU_NAME_} was already emulated ... skipping"
           continue
         fi
-
+        
+        #grep -F: 使用固定字符串搜索，而不是正则表达式
         if echo "${BIN_BLACKLIST[@]}" | grep -q -F -w "$(basename "${FULL_BIN_PATH}")"; then
           print_output "[*] Binary ${ORANGE}${BIN_}${NC} (${ORANGE}${BIN_CNT}/${#BIN_EMU_ARR[@]}${NC}) not emulated - blacklist triggered"
           continue
@@ -352,6 +354,7 @@ run_init_test() {
   write_log "" "${LOG_FILE_INIT}"
 
   if [[ "${CHROOT}" == "jchroot" ]]; then
+    # strace: 跟踪一个进程执行的所有系统调用，并报告这些调用的参数和返回值
     timeout --preserve-status --signal SIGINT 2 "${CHROOT}" "${OPTS[@]}" "${R_PATH}" -- ./"${EMULATOR}" --strace "${BIN_}" >> "${LOG_PATH_MODULE}""/qemu_chroot_check_""${BIN_EMU_NAME_}"".txt" 2>&1 || true
     PID="$!"
     disown "${PID}" 2> /dev/null || true
@@ -567,6 +570,7 @@ emulate_strace_run() {
           local OUTPUT=""
           OUTPUT=$(file "${FILENAME_FOUND}" | cut -d ':' -f2)
           if [[ "${OUTPUT}" != *"(named pipe)" ]];then
+            # cp -L: 复制符号链接指向的实际文件或目录
             cp -L "${FILENAME_FOUND}" "${R_PATH}""${PATH_MISSING}" 2> /dev/null || true
           fi
           continue
@@ -724,6 +728,9 @@ running_jobs() {
 
   # if no emulation at all was possible the $EMULATOR variable is not defined
   if [[ -n "${EMULATOR}" ]]; then
+    # -f: 匹配完整的命令行
+    # -c: 返回匹配的进程数
+    # -a: 显示匹配的完整命令行
     CJOBS=$(pgrep -f -c -a "${EMULATOR}" || true)
     if [[ -n "${CJOBS}" ]] ; then
       print_ln "no_log"
@@ -859,6 +866,8 @@ creating_dev_area() {
 
   if ! [[ -e "${R_PATH}""/dev/console" ]] ; then
     print_output "[*] Creating /dev/console"
+    # mknod: Unix/Linux 命令，用于创建特殊文件（也称为设备文件）
+    # -m: 设置文件权限
     mknod -m 622 "${R_PATH}""/dev/console" c 5 1 2> /dev/null || true
   fi
 

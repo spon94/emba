@@ -55,6 +55,10 @@ S60_cert_file_check()
           CERT_NAME=$(basename "${LINE}")
           CERT_LOG="${LOG_PATH_MODULE}/cert_details_${CERT_NAME}.txt"
           write_log "[*] Cert file: ${LINE}\n" "${CERT_LOG}"
+          # storeutl 是 OpenSSL 中的一个实用工具，用于操作证书存储
+          # -noout 通常用于不需要输出证书内容而只需要其他信息的情况
+          # -text 选项用于以文本格式输出证书信息
+          # -certs 选项用于指定要处理的是证书文件
           timeout --preserve-status --signal SIGINT 10 openssl storeutl -noout -text -certs "${LINE}" 2>/dev/null >> "${CERT_LOG}" || true
           NESTED_CERT_CNT=$(tail -n 1 < "${CERT_LOG}" | grep -o '[0-9]\+')
           if ! [[ "${NESTED_CERT_CNT}" =~ ^[0-9]+$ ]]; then
@@ -64,9 +68,16 @@ S60_cert_file_check()
           TOTAL_CERT_CNT=$((TOTAL_CERT_CNT + NESTED_CERT_CNT))
           for ((i=1; i<=NESTED_CERT_CNT; i++)); do
             index=$((i - 1))
+            # --iso-8601 是 GNU date 命令的一个选项，用于以 ISO 8601 格式输出日期和时间
             CERT_DATE=$(date --date="$(grep 'Not After :' "${CERT_LOG}" | awk -v cnt="${i}" 'NR==cnt {sub(/.*: /, ""); print}')" --iso-8601 || true)
             CERT_DATE_=$(date --date="$(grep 'Not After :' "${CERT_LOG}" | awk -v cnt="${i}" 'NR==cnt {sub(/.*: /, ""); print}')" +%s || true)
             SIGNATURE=$(sed -n '/Signature Value:/!b;n;p' "${CERT_LOG}" | sed -n "${i}p" | xargs)
+            # head -n -1：输出文件的所有行，除了最后一行
+            # -v idx="${index}"：将外部变量 ${index} 传递给 awk，并在 awk 中使用变量 idx
+            # BEGIN 块：在处理任何输入行之前执行
+            # found = 0：初始化变量 found 为 0，用于跟踪是否找到了目标证书
+            # /^[0-9]+: Certificate$/ { ... }
+              # 如果匹配到这样的行且 found 为真，表示找到了一个证书的结束标志，打印当前收集的证书信息并重置 cert 和 found
             SPECIFIC_CERT=$(head -n -1 < "${CERT_LOG}" | awk -v idx="${index}" '
             BEGIN { found = 0 }
             /^[0-9]+: Certificate$/ {
@@ -79,9 +90,11 @@ S60_cert_file_check()
             $1 == idx ":" && !found {
                 found = 1
             }
+            # 如果 found 为真，将当前行追加到 cert 变量中
             found {
                 cert = cert $0 ORS
             }
+            # END 块：在处理完所有输入行之后执行
             END {
                 if (found) {
                     print cert

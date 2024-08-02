@@ -25,10 +25,10 @@ I05_emba_docker_image_dl() {
     echo -e "\\n""${ORANGE}""${BOLD}""embeddedanalyzer/emba docker image""${NC}"
     echo -e "Description: EMBA docker images used for firmware analysis."
 
-    if command -v docker > /dev/null; then
-      f="$(docker manifest inspect "${CONTAINER}" | grep "size" | sed -e 's/[^0-9 ]//g')"
-      echo "Download-Size : ""$(("$(( "${f//$'\n'/+}" ))"/1048576))"" MB"
-    fi
+    # if command -v docker > /dev/null; then
+    #   f="$(docker manifest inspect "${CONTAINER}" | grep "size" | sed -e 's/[^0-9 ]//g')"
+    #   echo "Download-Size : ""$(("$(( "${f//$'\n'/+}" ))"/1048576))"" MB"
+    # fi
 
     if [[ "${LIST_DEP}" -eq 1 ]] || [[ "${IN_DOCKER}" -eq 1 ]] ; then
       ANSWER=("n")

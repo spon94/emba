@@ -109,6 +109,10 @@ radare_decompilation() {
     # with axt we are looking for function usages and store this in $FUNCTION_usage
     # pdd is for decompilation - with @@ we are working through all the identified functions
     # We analyse only 150 functions per binary
+    # timeout：命令，用于限制其他命令的运行时间
+    # --preserve-status：在超时后，timeout 将返回被终止命令的退出状态，而不是 timeout 自身的退出状态
+    # --signal SIGINT：在超时后，发送 SIGINT 信号来终止被运行的命令。SIGINT 信号通常用于中断进程，就像按下 Ctrl+C
+    # 3600：指定的时间限制，以秒为单位
     timeout --preserve-status --signal SIGINT 3600 r2 -e bin.cache=true -e io.cache=true -e scr.color=false -q -A -c \
       'axt `is~'"${FUNCTION}"'[2]`~[0] | tail -n +2 | grep -v "nofunc" | sort -u | tail -n 150 > '"${LOG_PATH_MODULE}""/""${FUNCTION}""_""${NAME}""_usage"'; pdda @@ `cat '"${LOG_PATH_MODULE}""/""${FUNCTION}""_""${NAME}"'_usage`' "${BINARY}" >> "${FUNC_LOG}" || true
 #      'axt `is~'"${FUNCTION}"'[2]`~[0] | tail -n +2 | grep -v "nofunc" | sort -u | tail -n 200 > '"${LOG_PATH_MODULE}""/""${FUNCTION}""_""${NAME}""_usage"'; pdd --assembly @@ `cat '"${LOG_PATH_MODULE}""/""${FUNCTION}""_""${NAME}"'_usage`' "${BINARY}" 2> /dev/null >> "${FUNC_LOG}" || true

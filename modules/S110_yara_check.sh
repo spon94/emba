@@ -47,6 +47,7 @@ S110_yara_check()
       local AUTHOR_STRING=" [] [author="
       if [[ "${YARA_OUT_LINE}" == *"${AUTHOR_STRING}"* ]]; then
         YRULE=$(echo "${YARA_OUT_LINE}" | awk '{print $1}')
+        # rev: 读取输入后字符反转
         MATCH_FILE=$(echo "${YARA_OUT_LINE}" | grep "\ \[\]\ \[author=\"" | rev | awk '{print $1}' | rev)
         MATCH_FILE_NAME=$(basename "${MATCH_FILE}")
         # this rule does not help us a lot ... remove it from results

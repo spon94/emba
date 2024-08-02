@@ -90,6 +90,8 @@ populate_karrays() {
   local K_VER=""
   local V=""
 
+  # 排除 ${EXCL_FIND[@]} 数组中指定的目录或文件
+  # 查找所有文件系统中的文件名以 .ko 或 .o 结尾的普通文件
   mapfile -t KERNEL_MODULES < <( find "${FIRMWARE_PATH}" "${EXCL_FIND[@]}" -xdev \( -iname "*.ko" -o -iname "*.o" \) -type f -exec md5sum {} \; 2>/dev/null | sort -u -k1,1 | cut -d\  -f3 )
 
   for K_MODULE in "${KERNEL_MODULES[@]}"; do
@@ -97,6 +99,7 @@ populate_karrays() {
       KERNEL_VERSION+=( "$(strings "${K_MODULE}" 2>/dev/null | grep "kernel_version=" | cut -d= -f2 || true)" )
       continue
     fi
+    # modinfo: 获取 Linux 内核模块的详细信息
     KERNEL_VERSION+=( "$(modinfo "${K_MODULE}" 2>/dev/null | grep -E "vermagic" | cut -d: -f2 | sed 's/^ *//g' || true)" )
     KERNEL_DESC+=( "$(modinfo "${K_MODULE}" 2>/dev/null | grep -E "description" | cut -d: -f2 | sed 's/^ *//g' | tr -c '[:alnum:]\n\r' '_' | sort -u || true)" )
   done
@@ -150,6 +153,7 @@ populate_karrays() {
   eval "KERNEL_DESC=($(for i in "${KERNEL_DESC[@]}" ; do echo "\"${i}}\"" ; done | sort -u))"
 
   # if we have no kernel version identified -> we try to identify a possible identifier in the path:
+  
   if [[ "${#KERNEL_VERSION_[@]}" -eq 0 && "${#KERNEL_MODULES[@]}" -ne 0 ]];then
     # remove the first part of the path:
     local KERNEL_VERSION1=""

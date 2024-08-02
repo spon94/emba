@@ -49,6 +49,8 @@ S24_kernel_bin_identifier()
     local K_FILE=""
     local K_VER_TMP=""
 
+    # ASCII text: 表示文件是纯文本
+    # ASCII: 例如 ASCII c program text，ASCII English text 等
     if file "${FILE}" | grep -q "ASCII text"; then
       # reduce false positive rate
       continue
@@ -231,13 +233,19 @@ dump_config() {
     print_output "[-] No kernel file to analyze here - ${ORANGE}${IMG_}${NC}"
     return
   fi
-
+  # export CF1='IKCFG_ST\037\213\010'(extract_kconfig)
+  # export CF2='0123456789'(extract_kconfig)
   if POS=$(tr "${CF1}\n${CF2}" "\n${CF2}=" < "${IMG_}" | grep -abo "^${CF2}"); then
+    # ${VAR%%PATTERN} 是 Bash 中的一种模式匹配操作，它会移除变量 VAR 中从右边开始的最长匹配 PATTERN 的子字符串
     POS=${POS%%:*}
 
+    # -c+<N> 选项表示从文件的第 N 个字节开始提取数据
+    # $((POS + 8)): 第 POS + 8 个字节开始提取数据
+    # zcat: 用于读取压缩文件的内容并将其输出到标准输出
     tail -c+"$((POS + 8))" "${IMG_}" | zcat > "${TMP1}" 2> /dev/null
 
     if [[ $? != 1 ]]; then  # exit status must be 0 or 2 (trailing garbage warning)
+      # set +e: 禁用错误退出模式
       [[ "${STRICT_MODE}" -eq 1 ]] && set +e
 
       if ! [[ -f "${TMP1}" ]]; then

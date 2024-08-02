@@ -27,6 +27,9 @@ S107_deep_password_search()
   local PW_HASHES=()
   local PW_HASH=""
 
+  # --color: 高亮匹配字符串
+  # -H: 输出显示文件名
+  # -f: 文件中读取待匹配字符串
   find "${FIRMWARE_PATH}" -xdev -type f -exec grep --color -n -a -E -H -f "${PW_HASH_CONFIG}" {} \; > "${TMP_DIR}"/pw_hashes.txt
 
   if [[ $(wc -l "${TMP_DIR}"/pw_hashes.txt | awk '{print $1}') -gt 0 ]]; then

@@ -356,6 +356,7 @@ S26_kernel_vuln_verifier()
 
 split_symbols_file() {
   print_output "[*] Splitting symbols file for processing ..." "no_log"
+  # split -l 100 : 大文件拆分成小文件，每个文件100行
   split -l 100 "${LOG_PATH_MODULE}"/symbols_uniq.txt "${LOG_PATH_MODULE}"/symbols_uniq.split.
   sed -i 's/^/EXPORT_SYMBOL\(/' "${LOG_PATH_MODULE}"/symbols_uniq.split.*
   sed -i 's/$/\)/' "${LOG_PATH_MODULE}"/symbols_uniq.split.*

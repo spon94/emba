@@ -97,6 +97,7 @@ S109_jtr_local_pw_cracking()
       print_ln
       if [[ -f "${JTR_WORDLIST}" ]]; then
         print_output "[*] Starting jtr with the following wordlist: ${ORANGE}${JTR_WORDLIST}${NC} with ${ORANGE}$(wc -l "${JTR_WORDLIST}" | awk '{print $1}')${NC} entries."
+        # --progress-every=120: 每隔 120s 打印破解进度
         john --progress-every=120 --wordlist="${JTR_WORDLIST}" "${LOG_PATH_MODULE}"/jtr_hashes.txt |& safe_logging "${LOG_FILE}" 0 || true &
         PID="$!"
       else
@@ -116,6 +117,7 @@ S109_jtr_local_pw_cracking()
         sleep 1
       done
       kill "${PID}" || true
+      # pgrep: 查找正在运行的进程，返回匹配的PID
       if pgrep john > /dev/null; then
         pkill -f "john" > /dev/null
       fi

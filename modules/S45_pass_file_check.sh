@@ -41,6 +41,7 @@ S45_pass_file_check()
 
     for SUDOERS_FILE in "${SUDOERS_FILE_PATH[@]}" ; do
       if [[ -e "${SUDOERS_FILE}" ]] ; then
+        # -v 选项表示反转匹配，即显示不匹配指定模式的行
         SUDOERS="${SUDOERS}""\\n""$(grep -v -e '^$' "${SUDOERS_FILE}" 2>/dev/null | grep -v "#" 2>/dev/null)"
       fi
     done

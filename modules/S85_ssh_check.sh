@@ -61,6 +61,7 @@ check_lzma_backdoor() {
     print_output "[*] Testing ${ORANGE}${lSSH_FILE/:*}${NC}:" "no_log"
 
     # usually we have something like liblzma.so.5, but sometimes we have also seen the exact version information in the output
+    # ldd：用于列出可执行文件或共享库所依赖的动态库的命令
     mapfile -t lLZMA_SSHD_ARR < <(ldd "${lSSH_FILE/:*}" | grep "liblzma" || true)
 
     for lLZMA_SSHD_ENTRY in "${lLZMA_SSHD_ARR[@]}"; do

@@ -60,6 +60,7 @@ check_fstab()
   local LINE=""
 
   # IFS=" " read -r -a FSTAB_ARR < <(printf '%s' "$(mod_path "/ETC_PATHS/fstab")")
+  # fstab: Linux 和 Unix 系统中的一个配置文件，用于声明文件系统的挂载信息
   mapfile -t FSTAB_ARR < <(mod_path "/ETC_PATHS/fstab")
 
   if [[ ${#FSTAB_ARR[@]} -gt 0 ]] ; then

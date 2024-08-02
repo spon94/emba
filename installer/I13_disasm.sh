@@ -105,9 +105,9 @@ I13_disasm() {
         # r2pm update
         # r2pm install r2dec
         # r2pm -cgi r2dec
-        r2pm -Uci r2dec
-        echo -e "${ORANGE}""${BOLD}""Installed r2 plugins:""${NC}"
-        r2pm -l
+        # r2pm -Uci r2dec
+        # echo -e "${ORANGE}""${BOLD}""Installed r2 plugins:""${NC}"
+        # r2pm -l
         # cp -pri /root/.local/share/radare2 external/radare_local_bak
       ;;
     esac

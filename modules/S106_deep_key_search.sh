@@ -52,6 +52,7 @@ deep_key_search() {
     GREP_PATTERN_COMMAND=( "${GREP_PATTERN_COMMAND[@]}" "-e" ".{0,15}""${PATTERN}"".{0,15}" )
   done
   print_ln
+  # -D skip: 跳过指定目录搜索
   readarray -t MATCH_FILES < <(grep -E -l -r "${GREP_PATTERN_COMMAND[@]}" -D skip "${LOG_DIR}"/firmware 2>/dev/null || true)
   if [[ ${#MATCH_FILES[@]} -gt 0 ]] ; then
     for MATCH_FILE in "${MATCH_FILES[@]}" ; do
@@ -65,6 +66,8 @@ deep_key_search() {
         write_log "[*] FILE_PATH: $(print_path "${MATCH_FILE}")" "${LOG_PATH_MODULE}/deep_key_search_${FILE_NAME}.txt"
         write_log "" "${LOG_PATH_MODULE}/deep_key_search_${FILE_NAME}.txt"
       fi
+      # --no-group-separator：在显示上下文行时，不在匹配组之间插入分隔符
+      # -h : 不显示文件名
       grep -A 2 --no-group-separator -E -n -a -h "${GREP_PATTERN_COMMAND[@]}" -D skip "${MATCH_FILE}" 2>/dev/null | tr -d '\0' >> "${LOG_PATH_MODULE}"/deep_key_search_"${FILE_NAME}".txt || true
       print_output "[+] $(print_path "${MATCH_FILE}")"
       write_link "${LOG_PATH_MODULE}""/deep_key_search_""${FILE_NAME}"".txt"

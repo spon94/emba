@@ -33,6 +33,7 @@ S108_stacs_password_search()
   local MESSAGE=""
 
   if command -v stacs > /dev/null ; then
+    # stacs: 由 YARA 支持的静态凭证扫描器
     stacs --skip-unprocessable --rule-pack "${STACS_RULES_DIR}"/credential.json "${FIRMWARE_PATH}" 2> "${TMP_DIR}"/stacs.err 1> "${STACS_LOG_FILE}" || true
 
     if [[ -f "${TMP_DIR}"/stacs.err ]]; then
@@ -40,14 +41,14 @@ S108_stacs_password_search()
       print_output "[*] STACS log:"
       tee -a "${LOG_FILE}" < "${TMP_DIR}"/stacs.err || true
     fi
-
+    # jq: 用于处理 JSON 数据的命令行工具
     if [[ -f "${STACS_LOG_FILE}" && $(jq ".runs[0] .results[] | .message[]" "${STACS_LOG_FILE}" | wc -l) -gt 0 ]]; then
       print_ln
       ELEMENTS_="$(jq ".runs[0] .results[] .message.text" "${STACS_LOG_FILE}" | wc -l)"
       print_output "[+] Found ${ORANGE}${ELEMENTS_}${GREEN} credential areas:"
       write_csv_log "Message" "PW_PATH" "PW_HASH" "PW_HASH_real"
       ELEMENTS=$((ELEMENTS_-1))
-
+      # seq: 用于生成从指定开始值到结束值之间的数字序列
       for ELEMENT in $(seq 0 "${ELEMENTS}"); do
         MESSAGE=$(jq ".runs[0] .results[${ELEMENT}] .message.text" "${STACS_LOG_FILE}" | grep -v null || true)
         PW_PATH=$(jq ".runs[0] .results[${ELEMENT}] .locations[] .physicalLocation[].uri" "${STACS_LOG_FILE}" \
