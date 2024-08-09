@@ -45,10 +45,11 @@ S16_ghidra_decompile_checks()
   local lNAME=""
   local BINS_CHECKED_ARR=()
 
-  if [[ "${FULL_TEST}" -ne 1 ]]; then
-    # we only need to wait if we are not using the full_scan profile
-    module_wait "S13_weak_func_check"
-  fi
+  # if [[ "${FULL_TEST}" -ne 1 ]]; then
+  #   # we only need to wait if we are not using the full_scan profile
+  #   module_wait "S13_weak_func_check"
+  # fi
+  module_wait "S13_weak_func_check"
   if [[ -f "${CSV_DIR}"/s13_weak_func_check.csv ]]; then
     local BINARIES=()
     # usually binaries with strcpy or system calls are more interesting for further analysis
@@ -150,7 +151,7 @@ ghidra_analyzer() {
   print_output "[*] Extracting decompiled code from binary ${ORANGE}${lNAME} / ${lBINARY}${NC} with Ghidra" "no_log"
   local IDENTIFIER="${RANDOM}"
 
-  "${GHIDRA_PATH}"/support/analyzeHeadless "${LOG_PATH_MODULE}" "ghidra_${lNAME}_${IDENTIFIER}" -import "${lBINARY}" -log "${LOG_PATH_MODULE}"/ghidra_"${lNAME}"_"${IDENTIFIER}".txt -scriptPath "${EXT_DIR}"/ghidra_scripts -postScript Haruspex || print_output "[-] Error detected while Ghidra run for ${lNAME}" "no_log"
+  timeout --preserve-status --signal SIGINT 1800 "${GHIDRA_PATH}"/support/analyzeHeadless "${LOG_PATH_MODULE}" "ghidra_${lNAME}_${IDENTIFIER}" -import "${lBINARY}" -log "${LOG_PATH_MODULE}"/ghidra_"${lNAME}"_"${IDENTIFIER}".txt -scriptPath "${EXT_DIR}"/ghidra_scripts -postScript Haruspex || print_output "[-] Error detected while Ghidra run for ${lNAME}" "no_log"
 
   # Ghidra cleanup:
   if [[ -d "${LOG_PATH_MODULE}"/"ghidra_${lNAME}_${IDENTIFIER}.rep" ]]; then

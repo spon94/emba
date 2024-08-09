@@ -33,11 +33,11 @@ S17_cwe_checker()
     local lTESTED_BINS=0
 
     # [[ "${IN_DOCKER}" -eq 1 ]] && cwe_container_prepare
-    if [[ "${FULL_TEST}" -ne 1 ]]; then
-      # we only need to wait if we are not using the full_scan profile
-      module_wait "S13_weak_func_check"
-    fi
-
+    # if [[ "${FULL_TEST}" -ne 1 ]]; then
+    #   # we only need to wait if we are not using the full_scan profile
+    #   module_wait "S13_weak_func_check"
+    # fi
+    module_wait "S13_weak_func_check"
     cwe_check
 
     if [[ -f "${TMP_DIR}"/CWE_CNT.tmp ]]; then
@@ -167,7 +167,7 @@ cwe_checker_threaded () {
   lBINARY=$(readlink -f "${lBINARY}")
 
   ulimit -Sv "${lMEM_LIMIT}"
-  timeout --preserve-status --signal SIGINT 3000 cwe_checker "${lBINARY}" --json --out "${LOG_PATH_MODULE}"/cwe_"${lNAME}".log || true
+  timeout --preserve-status --signal SIGINT 2400 cwe_checker "${lBINARY}" --json --out "${LOG_PATH_MODULE}"/cwe_"${lNAME}".log || true
   ulimit -Sv unlimited
   print_output "[*] Tested ${ORANGE}""$(print_path "${lBINARY}")""${NC}" "no_log"
 

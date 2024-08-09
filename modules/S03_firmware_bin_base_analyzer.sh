@@ -78,7 +78,9 @@ os_identification() {
   write_log "[*] Initial OS guessing:"
   write_csv_log "Guessed OS" "confidential rating" "verified" "Linux root filesystems found"
 
-  OS_SEARCHER=("Linux" "FreeBSD" "VxWorks\|Wind" "FreeRTOS" "ADONIS" "eCos" "uC/OS" "SIPROTEC" "QNX" "CPU\ [34][12][0-9]-[0-9]" "CP443" "Sinamics" "UEFI" "HelenOS" "Windows\ CE")
+  # OS_SEARCHER=("Linux" "FreeBSD" "VxWorks\|Wind" "FreeRTOS" "ADONIS" "eCos" "uC/OS" "SIPROTEC" "QNX" "CPU\ [34][12][0-9]-[0-9]" "CP443" "Sinamics" "UEFI" "HelenOS" "Windows\ CE")
+  OS_SEARCHER=("Linux" "Windows\ CE")
+
   print_dot
   # declare -A: 声明关联数组
   declare -A OS_COUNTER=()
